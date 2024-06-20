@@ -1,20 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, Button, Container, Grid, TextField, Typography, Paper, InputAdornment 
-} from '@mui/material';
+import { Box, Button, Container, Grid, TextField, Typography, Paper, InputAdornment } from '@mui/material';
 import {
   getClient, getAccounts, config, registrationCost, registerDomain, resolveRecord, tokenMetadata, updateUserDomainData, updateResolver
 } from './archwayClient';
 
 const ArchID = () => {
-  const [domain, setDomain] = useState('');
+  const [registerDomainName, setRegisterDomainName] = useState('');
+  const [resolveDomainName, setResolveDomainName] = useState('');
+  const [fetchDomainDataName, setFetchDomainDataName] = useState('');
+  const [updateDomainName, setUpdateDomainName] = useState('');
+  const [updateResolverDomainName, setUpdateResolverDomainName] = useState('');
+
   const [resolutionAddress, setResolutionAddress] = useState('');
   const [metadataUpdate, setMetadataUpdate] = useState('');
   const [nameResolutionResult, setNameResolutionResult] = useState({});
   const [domainData, setDomainData] = useState({});
   const [years, setYears] = useState(1);
   const [registrationFee, setRegistrationFee] = useState(0);
-  const [extendYears, setExtendYears] = useState(1);
 
   useEffect(() => {
     const fetchConfig = async () => {
@@ -26,7 +28,8 @@ const ArchID = () => {
 
   const handleRegisterDomain = async () => {
     try {
-      const tx = await registerDomain(domain, years);
+      const domainName = `${registerDomainName}`;
+      const tx = await registerDomain(domainName, years);
       alert(`Domain registered successfully: ${tx}`);
     } catch (e) {
       alert(`Failed to register domain: ${e.message}`);
@@ -35,7 +38,8 @@ const ArchID = () => {
 
   const handleResolveDomain = async () => {
     try {
-      const result = await resolveRecord(domain);
+      const domainWithSuffix = `${resolveDomainName}.arch`;
+      const result = await resolveRecord(domainWithSuffix);
       setNameResolutionResult(result);
     } catch (e) {
       alert(`Failed to resolve domain: ${e.message}`);
@@ -44,7 +48,8 @@ const ArchID = () => {
 
   const handleFetchDomainData = async () => {
     try {
-      const result = await tokenMetadata(domain);
+      const domainWithSuffix = `${fetchDomainDataName}.arch`;
+      const result = await tokenMetadata(domainWithSuffix);
       setDomainData(result);
     } catch (e) {
       alert(`Failed to fetch domain data: ${e.message}`);
@@ -53,7 +58,8 @@ const ArchID = () => {
 
   const handleUpdateDomainData = async () => {
     try {
-      const tx = await updateUserDomainData(domain, JSON.parse(metadataUpdate));
+      const domainWithSuffix = `${updateDomainName}.arch`;
+      const tx = await updateUserDomainData(domainWithSuffix, JSON.parse(metadataUpdate));
       alert(`Domain data updated successfully: ${tx}`);
     } catch (e) {
       alert(`Failed to update domain data: ${e.message}`);
@@ -62,7 +68,8 @@ const ArchID = () => {
 
   const handleUpdateResolver = async () => {
     try {
-      const tx = await updateResolver(domain, resolutionAddress);
+      const domainWithSuffix = `${updateResolverDomainName}.arch`;
+      const tx = await updateResolver(domainWithSuffix, resolutionAddress);
       alert(`Resolver updated successfully: ${tx}`);
     } catch (e) {
       alert(`Failed to update resolver: ${e.message}`);
@@ -81,12 +88,13 @@ const ArchID = () => {
             Register Domain
           </Typography>
           <Grid container spacing={2}>
-            <Grid item xs={12} sm={8}>
+            <Grid item xs={12}>
               <TextField
                 label="Domain"
                 fullWidth
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                placeholder="don't include .arch"
+                value={registerDomainName}
+                onChange={(e) => setRegisterDomainName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -121,8 +129,9 @@ const ArchID = () => {
               <TextField
                 label="Domain"
                 fullWidth
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                placeholder="don't include .arch"
+                value={resolveDomainName}
+                onChange={(e) => setResolveDomainName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>
@@ -147,8 +156,9 @@ const ArchID = () => {
               <TextField
                 label="Domain"
                 fullWidth
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                placeholder="example.arch"
+                value={fetchDomainDataName}
+                onChange={(e) => setFetchDomainDataName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>
@@ -173,8 +183,9 @@ const ArchID = () => {
               <TextField
                 label="Domain"
                 fullWidth
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                placeholder="don't include .arch"
+                value={updateDomainName}
+                onChange={(e) => setUpdateDomainName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>
@@ -204,8 +215,9 @@ const ArchID = () => {
               <TextField
                 label="Domain"
                 fullWidth
-                value={domain}
-                onChange={(e) => setDomain(e.target.value)}
+                placeholder="don't include .arch"
+                value={updateResolverDomainName}
+                onChange={(e) => setUpdateResolverDomainName(e.target.value)}
               />
             </Grid>
             <Grid item xs={12}>

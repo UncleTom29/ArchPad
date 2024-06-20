@@ -13,6 +13,7 @@ const AirdropLaunchpad = ({ signer }) => {
     const [tokenAddress, setTokenAddress] = useState('');
     const [feedback, setFeedback] = useState('');
     const [isArchID, setIsArchID] = useState(false);
+    const [manualRecipients, setManualRecipients] = useState('');
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0];
@@ -24,7 +25,7 @@ const AirdropLaunchpad = ({ signer }) => {
             const sheetName = workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
             const parsedData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-            const recipients = parsedData.flat().map(addr => addr.trim());
+            const recipients = parsedData.flat().map(addr => addr.toString().trim());
             setRecipients(recipients);
         };
         
@@ -48,6 +49,12 @@ const AirdropLaunchpad = ({ signer }) => {
 
             let recipientList = isArchID ? await resolveArchIDs(recipients) : recipients;
 
+            // Add manual recipients if any
+            if (manualRecipients.trim()) {
+                const manualList = manualRecipients.split(',').map(addr => addr.trim());
+                recipientList = [...recipientList, ...manualList];
+            }
+
             // Check if the account has enough funds
             const balance = await client.getBalance(accountAddress, tokenAddress);
             if (parseInt(balance.amount) < parseInt(tokenAmount) * recipientList.length) {
@@ -64,16 +71,7 @@ const AirdropLaunchpad = ({ signer }) => {
                 },
             }));
 
-            // Estimate the gas fee
-            const feeEstimate = await client.simulate(accountAddress, messages, "");
-            const gasLimit = feeEstimate.gas_used;
-            const gasPrice = 0.025; // Assuming gas price is 0.025 aconst per gas unit
-            const fee = {
-                amount: coins(gasLimit * gasPrice, "aconst"),
-                gas: gasLimit.toString(),
-            };
-
-            const result = await client.signAndBroadcast(accountAddress, messages, fee);
+            const result = await client.signAndBroadcast(accountAddress, messages, 'auto');
             console.log(result);
             setFeedback('Airdrop executed successfully!');
         } catch (error) {
@@ -104,7 +102,16 @@ const AirdropLaunchpad = ({ signer }) => {
                     />
                     <FormControlLabel
                         control={<Switch checked={isArchID} onChange={(e) => setIsArchID(e.target.checked)} />}
-                        label="Recipients are Arch IDs"
+                        label="Toggle ON for .arch recipients"
+                        sx={{ mt: 2 }}
+                    />
+                    <TextField
+                        fullWidth
+                        margin="normal"
+                        label="Manual Recipients"
+                        helperText="Enter addresses or .arch names separated by commas"
+                        value={manualRecipients}
+                        onChange={(e) => setManualRecipients(e.target.value)}
                         sx={{ mt: 2 }}
                     />
                     <Button

@@ -15,15 +15,8 @@ const TokenFactory = ({ signer }) => {
             const accounts = await signer.getAccounts();
             const accountAddress = accounts[0].address;
 
-            // Check if the account has enough funds
-            const balance = await client.getBalance(accountAddress, 'aconst');
-            if (balance.amount === '0') {
-                setFeedback('Account does not have enough funds. Please fund your account.');
-                return;
-            }
-
-            // CW20 contract code_id obtained from previous upload
-            const codeId = 1; // Replace with your actual code_id
+            // CW20 contract code_id obtained
+            const codeId = 3026; // Ensure codeId is an integer
 
             const initMsg = {
                 name: tokenName,
@@ -32,44 +25,35 @@ const TokenFactory = ({ signer }) => {
                 initial_balances: [{
                     address: accountAddress,
                     amount: tokenSupply
-                }]
+                }],
+                mint: null, // Set to null if no minting configuration is needed
+                marketing: null // Set to null if no marketing information is provided
             };
 
-            // Estimate the gas fee
-            const feeEstimate = await client.simulate(accountAddress, [{
+            const instantiateContractMsg = {
                 typeUrl: "/cosmwasm.wasm.v1.MsgInstantiateContract",
                 value: {
                     sender: accountAddress,
-                    code_id: codeId,
-                    init_msg: initMsg,
-                    label: `Init ${tokenName}`
+                    codeId: codeId,
+                    label: `Init ${tokenName}`,
+                    msg: new TextEncoder().encode(JSON.stringify(initMsg)), // Proper encoding
+                    funds: []
                 }
-            }], "");
-            const gasLimit = feeEstimate.gas_info.gas_used;
-            const gasPrice = 0.025; // Assuming gas price is 0.025 aconst per gas unit
-            const fee = {
-                amount: [{ denom: "aconst", amount: (gasLimit * gasPrice).toFixed(0).toString() }],
-                gas: gasLimit.toString(),
             };
 
-            const result = await client.signAndBroadcast(accountAddress, [{
-                typeUrl: "/cosmwasm.wasm.v1.MsgInstantiateContract",
-                value: {
-                    sender: accountAddress,
-                    code_id: codeId,
-                    init_msg: initMsg,
-                    label: `Init ${tokenName}`
-                }
-            }], fee);
+            // Let the wallet set the fee automatically
+            const result = await client.signAndBroadcast(accountAddress, [instantiateContractMsg], 'auto');
 
             if (result.code === 0) {
-                setFeedback('Token created successfully!');
+                const logs = JSON.parse(result.rawLog);
+                const contractAddress = logs[0].events.find(e => e.type === 'instantiate').attributes.find(a => a.key === '_contract_address').value;
+                setFeedback(`Token created successfully! Contract address: ${contractAddress}`);
             } else {
-                setFeedback(`Failed to create token: ${result.log || result.rawLog}`);
+                setFeedback(`Failed to create token: ${result.rawLog}`);
             }
         } catch (error) {
             console.error("Failed to create token", error);
-            setFeedback('Failed to create token.');
+            setFeedback(`Failed to create token: ${error.message}`);
         }
     };
 
