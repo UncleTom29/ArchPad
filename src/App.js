@@ -5,7 +5,7 @@ import ConnectWallet from './ConnectWallet';
 import TokenFactory from './TokenFactory';
 import AirdropLaunchpad from './AirdropLaunchPad';
 import theme from './theme';
-
+import ArchID from './ArchID';
 function App() {
     const [signer, setSigner] = useState(null);
 
@@ -21,6 +21,7 @@ function App() {
                     <>
                         <TokenFactory signer={signer} />
                         <AirdropLaunchpad signer={signer} />
+                        <ArchID signer={signer} />
                     </>
                 )}
             </Container>

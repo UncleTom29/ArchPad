@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Box, TextField, Button, Typography, Paper } from '@mui/material';
 import { SigningArchwayClient } from '@archwayhq/arch3.js';
-import { coins } from '@cosmjs/stargate';
+import ChainInfo from './constantine.config.js';
+
 const TokenFactory = ({ signer }) => {
     const [tokenName, setTokenName] = useState('');
     const [tokenSymbol, setTokenSymbol] = useState('');
@@ -10,46 +11,62 @@ const TokenFactory = ({ signer }) => {
 
     const createToken = async () => {
         try {
-            const client = await SigningArchwayClient.connectWithSigner("https://rpc.mainnet.archway.io", signer);
-
+            const client = await SigningArchwayClient.connectWithSigner(ChainInfo.rpc, signer);
             const accounts = await signer.getAccounts();
             const accountAddress = accounts[0].address;
 
             // Check if the account has enough funds
-            const account = await client.getAccount(accountAddress);
-            if (!account) {
-                setFeedback('Account does not exist on chain. Send some tokens there before trying to create a token.');
-                return;
-            }
-
-            const balance = await client.getBalance(accountAddress, 'uarch');
+            const balance = await client.getBalance(accountAddress, 'aconst');
             if (balance.amount === '0') {
                 setFeedback('Account does not have enough funds. Please fund your account.');
                 return;
             }
 
-            const msg = {
-                type: "cosmos-sdk/MsgCreateToken",
-                value: {
-                    name: tokenName,
-                    symbol: tokenSymbol,
-                    totalSupply: tokenSupply,
-                    owner: accountAddress,
-                },
+            // CW20 contract code_id obtained from previous upload
+            const codeId = 1; // Replace with your actual code_id
+
+            const initMsg = {
+                name: tokenName,
+                symbol: tokenSymbol,
+                decimals: 18,
+                initial_balances: [{
+                    address: accountAddress,
+                    amount: tokenSupply
+                }]
             };
 
             // Estimate the gas fee
-            const feeEstimate = await client.simulate(accountAddress, [msg], "");
-            const gasLimit = feeEstimate.gas_used;
-            const gasPrice = 0.025; // Assuming gas price is 0.025 uarch per gas unit
+            const feeEstimate = await client.simulate(accountAddress, [{
+                typeUrl: "/cosmwasm.wasm.v1.MsgInstantiateContract",
+                value: {
+                    sender: accountAddress,
+                    code_id: codeId,
+                    init_msg: initMsg,
+                    label: `Init ${tokenName}`
+                }
+            }], "");
+            const gasLimit = feeEstimate.gas_info.gas_used;
+            const gasPrice = 0.025; // Assuming gas price is 0.025 aconst per gas unit
             const fee = {
-                amount: coins(gasLimit * gasPrice, "uarch"),
+                amount: [{ denom: "aconst", amount: (gasLimit * gasPrice).toFixed(0).toString() }],
                 gas: gasLimit.toString(),
             };
 
-            const result = await client.signAndBroadcast(accountAddress, [msg], fee);
-            console.log(result);
-            setFeedback('Token created successfully!');
+            const result = await client.signAndBroadcast(accountAddress, [{
+                typeUrl: "/cosmwasm.wasm.v1.MsgInstantiateContract",
+                value: {
+                    sender: accountAddress,
+                    code_id: codeId,
+                    init_msg: initMsg,
+                    label: `Init ${tokenName}`
+                }
+            }], fee);
+
+            if (result.code === 0) {
+                setFeedback('Token created successfully!');
+            } else {
+                setFeedback(`Failed to create token: ${result.log || result.rawLog}`);
+            }
         } catch (error) {
             console.error("Failed to create token", error);
             setFeedback('Failed to create token.');
