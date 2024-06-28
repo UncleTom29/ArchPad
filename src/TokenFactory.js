@@ -3,8 +3,6 @@ import { Box, TextField, Button, Typography, Paper, FormControlLabel, Switch } f
 import { SigningArchwayClient } from '@archwayhq/arch3.js';
 import ChainInfo from './constantine.config.js';
 import BigNumber from 'bignumber.js';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const TokenFactory = ({ signer }) => {
     const [tokenName, setTokenName] = useState('');
@@ -34,7 +32,7 @@ const TokenFactory = ({ signer }) => {
         try {
             await window.keplr.suggestToken(ChainInfo.chainId, contractAddress);
             alert('Token added to Keplr wallet successfully!');
-            toast.info('Token Added To Keplr Successfully')
+    
         } catch (error) {
             console.error('Failed to add token to Keplr wallet', error);
             alert('Failed to add token to Keplr wallet');
@@ -45,7 +43,7 @@ const TokenFactory = ({ signer }) => {
 
     const createToken = async () => {
         setFeedback('Creating Token...');
-        toast.info('Generating Custom CW20 Token...')
+       
         try {
             const client = await SigningArchwayClient.connectWithSigner(ChainInfo.rpc, signer);
             const accounts = await signer.getAccounts();
@@ -102,7 +100,7 @@ const TokenFactory = ({ signer }) => {
                 const logs = JSON.parse(result.rawLog);
                 const contractAddress = logs[0].events.find(e => e.type === 'instantiate').attributes.find(a => a.key === '_contract_address').value;
                 setFeedback(`Token created successfully! Contract address: ${contractAddress}`);
-                toast.info('Token created successfully')
+               
                
 
                 // Check the balance of the token owner
@@ -131,7 +129,7 @@ const TokenFactory = ({ signer }) => {
 
     return (
         <Paper sx={{ p: 4, mt: 4, mx: 'auto', maxWidth: 500 }}>
-             <ToastContainer />
+        
             <Typography variant="h5" gutterBottom>Create Your Token</Typography>
             <Box component="form" noValidate autoComplete="off">
                 <TextField
